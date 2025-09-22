@@ -1,0 +1,72 @@
+name: Aggregate Backend endpoints
+
+on:
+  push:
+    paths:
+      - "endpoints/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Aggregate backend metrics
+        run: |
+          set -euo pipefail
+          mkdir -p endpoints
+
+          # список backend-репозиториев (keys == owner__repo)
+          BACKENDS=(
+            "existgive__backend-api"
+            "existgive__search-service"
+            "existgive__email-service"
+            "existgive__media-service"
+            "existgive__image-service"
+            "existgive__files-service"
+            "existgive__admin-backend-api"
+          )
+
+          PERIODS=(7d 30d 90d 180d 365d)
+
+          sum_kind () {
+            local kind="$1"   # commits | prs_merged
+            local period="$2" # e.g. 7d
+            local total=0
+            for key in "${BACKENDS[@]}"; do
+              f="endpoints/${key}__${kind}_${period}.json"
+              if [[ -f "$f" ]]; then
+                val=$(jq -r '.message' "$f")
+                [[ "$val" =~ ^[0-9]+$ ]] || val=0
+                total=$(( total + val ))
+              fi
+            done
+            echo "$total"
+          }
+
+          for p in "${PERIODS[@]}"; do
+            tc=$(sum_kind commits "$p")
+            tp=$(sum_kind prs_merged "$p")
+
+            cat > "endpoints/group__backend__commits_${p}.json" <<EOF
+          {"schemaVersion": 1,"label": "commits (${p})","message": "${tc}","color": "informational"}
+          EOF
+          cat > "endpoints/group__backend__prs_merged_${p}.json" <<EOF
+          {"schemaVersion": 1,"label": "merged PRs (${p})","message": "${tp}","color": "informational"}
+          EOF
+          done
+
+      - name: Commit aggregated endpoints
+        run: |
+          git config user.name  "pulse-bot"
+          git config user.email "pulse-bot@users.noreply.github.com"
+          git add endpoints/group__backend__*.json
+          git commit -m "Aggregate backend endpoints" || echo "No changes"
+          git push
