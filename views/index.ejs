@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1><i class="fas fa-chart-pulse"></i> Product Pulse</h1>
+            <p>Monitor your private repositories activity</p>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <% if (error) { %>
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <%= error %>
+                </div>
+            <% } %>
+
+            <div class="dashboard">
+                <section class="repositories-section">
+                    <h2>Private Repositories</h2>
+                    <div id="repositories-list" class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading repositories...
+                    </div>
+                </section>
+
+                <section class="pulse-section" id="pulse-section" style="display: none;">
+                    <h2>Repository Pulse</h2>
+                    <div id="pulse-data"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
